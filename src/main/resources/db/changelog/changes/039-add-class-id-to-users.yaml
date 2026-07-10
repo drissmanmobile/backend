@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-class-id-to-users
+      author: drissman
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: class_id
+                  type: uuid
+              - column:
+                  name: cni_number
+                  type: varchar(255)
+              - column:
+                  name: birth_date
+                  type: date
+              - column:
+                  name: address
+                  type: varchar(255)

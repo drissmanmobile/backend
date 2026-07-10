@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-registrations-table
+      author: drissman
+      changes:
+        - createTable:
+            tableName: registrations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: school_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: formation_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: varchar(255)
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_status
+                  type: varchar(50)
+              - column:
+                  name: documents_status
+                  type: varchar(50)
+              - column:
+                  name: remarks
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: validated_at
+                  type: timestamp
+              - column:
+                  name: validated_by
+                  type: uuid

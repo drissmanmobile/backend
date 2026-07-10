@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-monitor-id-to-users
+      author: drissman
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: monitor_id
+                  type: uuid

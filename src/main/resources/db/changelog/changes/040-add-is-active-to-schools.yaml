@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-is-active-to-schools
+      author: drissman
+      changes:
+        - addColumn:
+            tableName: schools
+            columns:
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true

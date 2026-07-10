@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 037-add-offer-id-to-sessions
+      author: drissman
+      changes:
+        - addColumn:
+            tableName: sessions
+            columns:
+              - column:
+                  name: offer_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_session_offer
+                    references: offers(id)
+        - sql:
+            sql: "UPDATE sessions SET offer_id = (SELECT offer_id FROM enrollments WHERE enrollments.id = sessions.enrollment_id) WHERE offer_id IS NULL AND enrollment_id IS NOT NULL"

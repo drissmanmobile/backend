@@ -1,0 +1,157 @@
+databaseChangeLog:
+  - changeSet:
+      id: 047-create-exercises-tables
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: exercises
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: student_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_ai_generated
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: questions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: exercise_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_questions_exercise_id
+                    references: exercises(id)
+                    deleteCascade: true
+              - column:
+                  name: content
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: explanation
+                  type: text
+
+        - createTable:
+            tableName: choices
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: question_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_choices_question_id
+                    references: questions(id)
+                    deleteCascade: true
+              - column:
+                  name: content
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_correct
+                  type: boolean
+                  defaultValueBoolean: false
+
+        - createTable:
+            tableName: student_attempts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: exercise_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_attempts_exercise_id
+                    references: exercises(id)
+                    deleteCascade: true
+              - column:
+                  name: student_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: score
+                  type: int
+              - column:
+                  name: total_questions
+                  type: int
+              - column:
+                  name: started_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: completed_at
+                  type: timestamp
+
+        - createTable:
+            tableName: student_answers
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: attempt_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_answers_attempt_id
+                    references: student_attempts(id)
+                    deleteCascade: true
+              - column:
+                  name: question_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_answers_question_id
+                    references: questions(id)
+                    deleteCascade: true
+              - column:
+                  name: choice_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_answers_choice_id
+                    references: choices(id)
+              - column:
+                  name: is_correct
+                  type: boolean
+                  defaultValueBoolean: false

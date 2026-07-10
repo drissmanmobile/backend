@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 045-create-device-tokens-table
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: device_tokens
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_device_tokens_user
+                    references: users(id)
+              - column:
+                  name: token
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: platform
+                  type: varchar(50)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addUniqueConstraint:
+            tableName: device_tokens
+            columnNames: token
+            constraintName: uq_device_tokens_token

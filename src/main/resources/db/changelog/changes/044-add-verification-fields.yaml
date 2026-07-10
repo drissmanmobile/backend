@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 044-add-verification-fields
+      author: drissman
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: is_verified
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: otp_code
+                  type: varchar(10)
+              - column:
+                  name: otp_expiry
+                  type: timestamp
+        # Update existing accounts to be verified
+        - sql:
+            sql: "UPDATE users SET is_verified = true"

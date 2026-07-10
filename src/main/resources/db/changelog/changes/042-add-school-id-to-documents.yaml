@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 042-add-school-id-to-documents
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: documents
+            columns:
+              - column:
+                  name: school_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableName: documents
+            baseColumnNames: school_id
+            constraintName: fk_documents_school
+            referencedTableName: schools
+            referencedColumnNames: id

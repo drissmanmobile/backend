@@ -1,0 +1,149 @@
+databaseChangeLog:
+  - changeSet:
+      id: 043-seed-5-schools
+      author: drissman
+      changes:
+        # SCHOOL 1
+        - insert:
+            tableName: schools
+            columns:
+              - column: { name: id, value: "d1111111-1111-1111-1111-111111111111" }
+              - column: { name: name, value: "Auto-École La Réussite" }
+              - column: { name: description, value: "L'excellence à votre service pour un apprentissage rapide et efficace." }
+              - column: { name: address, value: "123 Rue de la Joie" }
+              - column: { name: city, value: "Yaoundé" }
+              - column: { name: phone, value: "650000001" }
+              - column: { name: email, value: "contact@lareussite.cm" }
+              - column: { name: rating, valueNumeric: 4.8 }
+              - column: { name: image_url, value: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80" }
+              - column: { name: is_active, valueBoolean: true }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a1111111-1111-1111-1111-111111111111" }
+              - column: { name: school_id, value: "d1111111-1111-1111-1111-111111111111" }
+              - column: { name: name, value: "Permis B - Complet" }
+              - column: { name: description, value: "Formation complète incluant code de la route et 20h de conduite." }
+              - column: { name: price, valueNumeric: 150000 }
+              - column: { name: hours, valueNumeric: 20 }
+              - column: { name: permit_type, value: "B" }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a1111111-1111-1111-1111-111111111112" }
+              - column: { name: school_id, value: "d1111111-1111-1111-1111-111111111111" }
+              - column: { name: name, value: "Permis B - Accéléré" }
+              - column: { name: description, value: "Formation intensive en 3 semaines avec 30h de conduite." }
+              - column: { name: price, valueNumeric: 200000 }
+              - column: { name: hours, valueNumeric: 30 }
+              - column: { name: permit_type, value: "B" }
+
+        # SCHOOL 2
+        - insert:
+            tableName: schools
+            columns:
+              - column: { name: id, value: "d2222222-2222-2222-2222-222222222222" }
+              - column: { name: name, value: "Conduite Pro Douala" }
+              - column: { name: description, value: "Les meilleurs moniteurs pour vous accompagner vers le permis." }
+              - column: { name: address, value: "Akwa" }
+              - column: { name: city, value: "Douala" }
+              - column: { name: phone, value: "670000002" }
+              - column: { name: email, value: "hello@conduitepro.cm" }
+              - column: { name: rating, valueNumeric: 4.5 }
+              - column: { name: image_url, value: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=600&q=80" }
+              - column: { name: is_active, valueBoolean: true }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a2222222-2222-2222-2222-222222222221" }
+              - column: { name: school_id, value: "d2222222-2222-2222-2222-222222222222" }
+              - column: { name: name, value: "Permis A - Moto" }
+              - column: { name: description, value: "Formation pratique pour moto." }
+              - column: { name: price, valueNumeric: 80000 }
+              - column: { name: hours, valueNumeric: 15 }
+              - column: { name: permit_type, value: "A" }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a2222222-2222-2222-2222-222222222222" }
+              - column: { name: school_id, value: "d2222222-2222-2222-2222-222222222222" }
+              - column: { name: name, value: "Permis B - VIP" }
+              - column: { name: description, value: "Formation VIP avec horaires flexibles." }
+              - column: { name: price, valueNumeric: 250000 }
+              - column: { name: hours, valueNumeric: 20 }
+              - column: { name: permit_type, value: "B" }
+
+        # SCHOOL 3
+        - insert:
+            tableName: schools
+            columns:
+              - column: { name: id, value: "d3333333-3333-3333-3333-333333333333" }
+              - column: { name: name, value: "L'Excellence Auto-École" }
+              - column: { name: description, value: "Votre réussite est notre priorité absolue." }
+              - column: { name: address, value: "Mokolo" }
+              - column: { name: city, value: "Yaoundé" }
+              - column: { name: phone, value: "690000003" }
+              - column: { name: email, value: "info@excellence.cm" }
+              - column: { name: rating, valueNumeric: 4.9 }
+              - column: { name: image_url, value: "https://images.unsplash.com/photo-1590840507311-b0db3c80a22a?auto=format&fit=crop&w=600&q=80" }
+              - column: { name: is_active, valueBoolean: true }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a3333333-3333-3333-3333-333333333331" }
+              - column: { name: school_id, value: "d3333333-3333-3333-3333-333333333333" }
+              - column: { name: name, value: "Permis B - Standard" }
+              - column: { name: description, value: "Formation classique pour le permis de catégorie B." }
+              - column: { name: price, valueNumeric: 140000 }
+              - column: { name: hours, valueNumeric: 20 }
+              - column: { name: permit_type, value: "B" }
+
+        # SCHOOL 4
+        - insert:
+            tableName: schools
+            columns:
+              - column: { name: id, value: "d4444444-4444-4444-4444-444444444444" }
+              - column: { name: name, value: "Permis Rapide" }
+              - column: { name: description, value: "Apprenez à conduire en un temps record." }
+              - column: { name: address, value: "Bonanjo" }
+              - column: { name: city, value: "Douala" }
+              - column: { name: phone, value: "680000004" }
+              - column: { name: email, value: "rapide@permis.cm" }
+              - column: { name: rating, valueNumeric: 4.2 }
+              - column: { name: image_url, value: "https://images.unsplash.com/photo-1522204523234-8729aa6e3d5f?auto=format&fit=crop&w=600&q=80" }
+              - column: { name: is_active, valueBoolean: true }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a4444444-4444-4444-4444-444444444441" }
+              - column: { name: school_id, value: "d4444444-4444-4444-4444-444444444444" }
+              - column: { name: name, value: "Permis C - Poids Lourd" }
+              - column: { name: description, value: "Formation professionnelle pour camions." }
+              - column: { name: price, valueNumeric: 300000 }
+              - column: { name: hours, valueNumeric: 40 }
+              - column: { name: permit_type, value: "C" }
+
+        # SCHOOL 5
+        - insert:
+            tableName: schools
+            columns:
+              - column: { name: id, value: "d5555555-5555-5555-5555-555555555555" }
+              - column: { name: name, value: "Etoile Auto-École" }
+              - column: { name: description, value: "L'étoile filante de l'apprentissage automobile." }
+              - column: { name: address, value: "Bastos" }
+              - column: { name: city, value: "Yaoundé" }
+              - column: { name: phone, value: "690000005" }
+              - column: { name: email, value: "etoile@autoecole.cm" }
+              - column: { name: rating, valueNumeric: 4.7 }
+              - column: { name: image_url, value: "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?auto=format&fit=crop&w=600&q=80" }
+              - column: { name: is_active, valueBoolean: true }
+        - insert:
+            tableName: offers
+            columns:
+              - column: { name: id, value: "a5555555-5555-5555-5555-555555555551" }
+              - column: { name: school_id, value: "d5555555-5555-5555-5555-555555555555" }
+              - column: { name: name, value: "Code de la route seul" }
+              - column: { name: description, value: "Formation théorique intensive pour le code." }
+              - column: { name: price, valueNumeric: 50000 }
+              - column: { name: hours, valueNumeric: 0 }
+              - column: { name: permit_type, value: "B" }
