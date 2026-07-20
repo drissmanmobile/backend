@@ -99,3 +99,7 @@ databaseChangeLog:
       file: db/changelog/changes/046-add-offer-id-to-documents.yaml
   - include:
       file: db/changelog/changes/047-create-exercises-tables.yaml
+  - include:
+      file: db/changelog/changes/048-create-vehicles-table.yaml
+  - include:
+      file: db/changelog/changes/049-add-vehicle-id-to-sessions.yaml

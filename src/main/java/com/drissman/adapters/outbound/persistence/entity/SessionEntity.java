@@ -32,6 +32,9 @@ public class SessionEntity {
     @Column("monitor_id")
     private UUID monitorId;
 
+    @Column("vehicle_id")
+    private UUID vehicleId;
+
     @Column("module_id")
     private UUID moduleId;
 

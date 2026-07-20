@@ -20,6 +20,7 @@ public class UserRestMapper {
                 .lastName(user.getLastName())
                 .role(user.getRole() != null ? user.getRole().name() : null)
                 .schoolId(user.getSchoolId())
+                .avatarUrl(user.getAvatarUrl())
                 .build();
     }
 }

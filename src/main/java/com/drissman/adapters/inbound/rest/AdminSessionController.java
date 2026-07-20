@@ -37,6 +37,7 @@ public class AdminSessionController {
                         request.getEnrollmentId(),
                         request.getOfferId(),
                         request.getMonitorId(),
+                        request.getVehicleId(),
                         request.getModuleId(),
                         request.getLessonId(),
                         request.getDate(),

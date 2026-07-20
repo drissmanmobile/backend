@@ -24,6 +24,7 @@ public class SessionRestMapper {
                 .enrollmentId(session.getEnrollmentId())
                 .offerId(session.getOfferId())
                 .monitorId(session.getMonitorId())
+                .vehicleId(session.getVehicleId())
                 .moduleId(session.getModuleId())
                 .lessonId(session.getLessonId())
                 .date(session.getDate())

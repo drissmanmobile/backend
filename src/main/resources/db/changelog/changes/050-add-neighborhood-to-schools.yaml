@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 050-add-neighborhood-to-schools
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: schools
+            columns:
+              - column:
+                  name: neighborhood
+                  type: VARCHAR(255)

@@ -13,9 +13,9 @@
     </parent>
 
     <groupId>com.drissman</groupId>
-    <artifactId>drissman-backend</artifactId>
+    <artifactId>drissman-backend-root</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Drissman Backend</name>
+    <name>Drissman Backend Root</name>
     <description>API Backend for Drissman - Driving School Platform</description>
 
     <properties>

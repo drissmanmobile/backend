@@ -26,7 +26,7 @@ public class UserApplicationService implements UserUseCase {
     }
 
     @Override
-    public Mono<User> updateProfile(UUID userId, String firstName, String lastName, String email) {
+    public Mono<User> updateProfile(UUID userId, String firstName, String lastName, String email, String avatarUrl) {
         return userRepositoryPort.findById(userId)
                 .flatMap(user -> {
                     if (firstName != null) {
@@ -37,6 +37,9 @@ public class UserApplicationService implements UserUseCase {
                     }
                     if (email != null) {
                         user.setEmail(email);
+                    }
+                    if (avatarUrl != null) {
+                        user.setAvatarUrl(avatarUrl);
                     }
                     return userRepositoryPort.save(user);
                 });

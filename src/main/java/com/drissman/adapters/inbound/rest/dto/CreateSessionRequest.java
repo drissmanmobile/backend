@@ -23,6 +23,8 @@ public class CreateSessionRequest {
     private UUID offerId;
 
     private UUID monitorId;
+    
+    private UUID vehicleId;
 
     @NotNull(message = "La date est obligatoire")
     private LocalDate date;

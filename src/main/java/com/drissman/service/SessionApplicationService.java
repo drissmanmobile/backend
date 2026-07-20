@@ -29,12 +29,12 @@ public class SessionApplicationService implements SessionUseCase {
     private final TrainingPeriodRepositoryPort trainingPeriodRepository;
 
     @Override
-    public Mono<Session> scheduleSession(UUID schoolId, UUID enrollmentId, UUID offerId, UUID monitorId, UUID moduleId, UUID lessonId, LocalDate date, LocalTime startTime, LocalTime endTime, String meetingPoint) {
+    public Mono<Session> scheduleSession(UUID schoolId, UUID enrollmentId, UUID offerId, UUID monitorId, UUID vehicleId, UUID moduleId, UUID lessonId, LocalDate date, LocalTime startTime, LocalTime endTime, String meetingPoint) {
         return enrollmentRepositoryPort.findById(enrollmentId)
                 .filter(enrollment -> schoolId.equals(enrollment.getSchoolId()))
                 .switchIfEmpty(Mono.error(new RuntimeException("Inscription introuvable pour cette auto-ecole")))
                 .flatMap(enrollment -> validateMonitorSchool(schoolId, monitorId)
-                        .then(Mono.defer(() -> createSession(enrollment, offerId, monitorId, moduleId, lessonId, date, startTime, endTime, meetingPoint))));
+                        .then(Mono.defer(() -> createSession(enrollment, offerId, monitorId, vehicleId, moduleId, lessonId, date, startTime, endTime, meetingPoint))));
     }
 
     @Override
@@ -162,11 +162,12 @@ public class SessionApplicationService implements SessionUseCase {
                 .then();
     }
 
-    private Mono<Session> createSession(Enrollment enrollment, UUID offerId, UUID monitorId, UUID moduleId, UUID lessonId, LocalDate date, LocalTime startTime, LocalTime endTime, String meetingPoint) {
+    private Mono<Session> createSession(Enrollment enrollment, UUID offerId, UUID monitorId, UUID vehicleId, UUID moduleId, UUID lessonId, LocalDate date, LocalTime startTime, LocalTime endTime, String meetingPoint) {
         Session session = Session.builder()
                 .enrollmentId(enrollment.getId())
                 .offerId(offerId)
                 .monitorId(monitorId)
+                .vehicleId(vehicleId)
                 .moduleId(moduleId)
                 .lessonId(lessonId)
                 .date(date)

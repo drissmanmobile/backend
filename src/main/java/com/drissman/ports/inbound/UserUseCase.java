@@ -8,6 +8,6 @@ import java.util.UUID;
 public interface UserUseCase {
     Mono<User> findById(UUID id);
     Mono<User> findByEmail(String email);
-    Mono<User> updateProfile(UUID userId, String firstName, String lastName, String email);
+    Mono<User> updateProfile(UUID userId, String firstName, String lastName, String email, String avatarUrl);
     Mono<Void> changePassword(UUID userId, String currentPassword, String newPassword);
 }

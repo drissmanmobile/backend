@@ -20,6 +20,7 @@ public class Session {
     private UUID enrollmentId;
     private UUID offerId;
     private UUID monitorId;
+    private UUID vehicleId;
     private UUID moduleId;
     private UUID lessonId;
     private LocalDate date;

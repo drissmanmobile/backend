@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 049-add-vehicle-id-to-sessions
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: sessions
+            columns:
+              - column:
+                  name: vehicle_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_sessions_vehicles
+                    references: vehicles(id)

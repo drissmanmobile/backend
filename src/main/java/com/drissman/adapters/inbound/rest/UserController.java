@@ -58,7 +58,7 @@ public class UserController {
             return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
         }
         UUID authenticatedUserId = UUID.fromString(principal.getName());
-        return userUseCase.updateProfile(authenticatedUserId, request.getFirstName(), request.getLastName(), request.getEmail())
+        return userUseCase.updateProfile(authenticatedUserId, request.getFirstName(), request.getLastName(), request.getEmail(), request.getAvatarUrl())
                 .map(UserRestMapper::toDto)
                 .map(data -> ApiResponse.ok(data, "Profil mis à jour avec succès"));
     }
@@ -75,7 +75,7 @@ public class UserController {
         if (!authenticatedUserId.equals(id)) {
             return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Vous ne pouvez modifier que votre propre profil"));
         }
-        return userUseCase.updateProfile(id, request.getFirstName(), request.getLastName(), request.getEmail())
+        return userUseCase.updateProfile(id, request.getFirstName(), request.getLastName(), request.getEmail(), request.getAvatarUrl())
                 .map(UserRestMapper::toDto)
                 .map(data -> ApiResponse.ok(data, "Profil mis à jour avec succès"));
     }
