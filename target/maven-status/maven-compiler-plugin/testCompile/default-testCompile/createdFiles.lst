@@ -1,0 +1,5 @@
+com/drissman/service/AuthServiceTest.class
+com/drissman/kernel/KernelAuthServiceTest.class
+com/drissman/service/PaymentServiceTest.class
+com/drissman/service/VehicleServiceTest.class
+com/drissman/service/SyncServiceTest.class
