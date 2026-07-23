@@ -3,6 +3,7 @@ package com.drissman.api.controller;
 import com.drissman.api.dto.PartnerStatsDto;
 import com.drissman.api.dto.UpdateSchoolRequest;
 import com.drissman.api.dto.AdminDashboardDto;
+import com.drissman.api.dto.SchoolDto;
 import com.drissman.domain.repository.UserRepository;
 
 import com.drissman.service.AdminSchoolService;
@@ -88,6 +89,18 @@ public class AdminSchoolController {
                         return Mono.empty();
                     return schoolService.update(user.getSchoolId(), request)
                             .then();
+                });
+    }
+
+    @GetMapping("/profile")
+    public Mono<SchoolDto> getAdminSchoolProfile(Principal principal) {
+        if (principal == null) return Mono.empty();
+        
+        UUID userId = UUID.fromString(principal.getName());
+        return userRepository.findById(userId)
+                .flatMap(user -> {
+                    if (user.getSchoolId() == null) return Mono.empty();
+                    return schoolService.findById(user.getSchoolId());
                 });
     }
 

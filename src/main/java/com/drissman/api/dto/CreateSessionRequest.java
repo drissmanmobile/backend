@@ -20,7 +20,7 @@ public class CreateSessionRequest {
     private List<UUID> offerIds;
 
     // Optional at creation time
-    private UUID monitorId;
+    private List<UUID> monitorIds;
 
     @NotNull(message = "La date est obligatoire")
     private LocalDate date;

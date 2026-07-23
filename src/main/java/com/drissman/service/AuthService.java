@@ -69,7 +69,7 @@ public class AuthService {
                                 .build();
 
                         return userRepository.save(user)
-                                .map(this::authenticated);
+                                .flatMap(this::authenticated);
                     }
 
                     if (userRole == User.Role.SCHOOL_ADMIN) {
@@ -93,7 +93,7 @@ public class AuthService {
                                             .build();
                                     return userRepository.save(user);
                                 })
-                                .map(this::authenticated);
+                                .flatMap(this::authenticated);
                     } else {
                         // VISITOR/CANDIDAT/MONITOR: simple user creation without school
                         User user = User.builder()
@@ -106,7 +106,7 @@ public class AuthService {
                                 .build();
 
                         return userRepository.save(user)
-                                .map(this::authenticated);
+                                .flatMap(this::authenticated);
                     }
                 });
     }
@@ -133,7 +133,7 @@ public class AuthService {
                     if (targetRole == User.Role.CANDIDAT || targetRole == User.Role.STUDENT) {
                         user.setRole(targetRole);
                         user.setSchoolId(null);
-                        return userRepository.save(user).map(this::authenticated);
+                        return userRepository.save(user).flatMap(this::authenticated);
                     }
 
                     School school = School.builder()
@@ -150,7 +150,7 @@ public class AuthService {
                                 user.setSchoolId(savedSchool.getId());
                                 return userRepository.save(user);
                             })
-                            .map(this::authenticated);
+                            .flatMap(this::authenticated);
                 });
     }
 
@@ -170,17 +170,17 @@ public class AuthService {
                             && passwordEncoder.matches(trimmedPassword, storedPassword);
 
                     if (matchesRaw || matchesTrimmed) {
-                        return Mono.just(authenticated(user));
+                        return authenticated(user);
                     }
 
                     // Backward compatibility for legacy rows stored in plain text.
                     if (!rawPassword.isEmpty() && rawPassword.equals(storedPassword)) {
                         user.setPassword(passwordEncoder.encode(rawPassword));
-                        return userRepository.save(user).map(this::authenticated);
+                        return userRepository.save(user).flatMap(this::authenticated);
                     }
                     if (!trimmedPassword.isEmpty() && trimmedPassword.equals(storedPassword)) {
                         user.setPassword(passwordEncoder.encode(trimmedPassword));
-                        return userRepository.save(user).map(this::authenticated);
+                        return userRepository.save(user).flatMap(this::authenticated);
                     }
 
                     return Mono.error(new RuntimeException("Invalid credentials"));
@@ -216,17 +216,24 @@ public class AuthService {
                                         .build();
                                 return userRepository.save(newUser);
                             }))
-                            .map(this::authenticated);
+                            .flatMap(this::authenticated);
                 });
     }
 
     /**
-     * Réponse d'authentification + synchronisation kernel en arrière-plan
-     * (compte-miroir + token 15 min). Best-effort : ne bloque jamais le login.
+     * Réponse d'authentification + synchronisation kernel.
+     * Attend la synchro pour pouvoir intercepter l'erreur de vérification d'email.
      */
-    private AuthResponse authenticated(User user) {
-        kernelAuthService.syncUserInBackground(user);
-        return createAuthResponse(user);
+    private Mono<AuthResponse> authenticated(User user) {
+        return kernelAuthService.syncUser(user)
+                .thenReturn(createAuthResponse(user))
+                .onErrorResume(e -> {
+                    if (e.getMessage() != null && e.getMessage().contains("EMAIL_VERIFICATION_REQUIRED")) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "EMAIL_VERIFICATION_REQUIRED"));
+                    }
+                    // Si le kernel plante pour une autre raison, on laisse passer (best-effort)
+                    return Mono.just(createAuthResponse(user));
+                });
     }
 
     private AuthResponse createAuthResponse(User user) {
