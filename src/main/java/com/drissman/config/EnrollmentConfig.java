@@ -1,5 +1,6 @@
 package com.drissman.config;
 
+import com.drissman.ports.outbound.InvoiceRepositoryPort;
 import com.drissman.ports.outbound.UserRepositoryPort;
 import com.drissman.ports.inbound.EnrollmentUseCase;
 import com.drissman.ports.outbound.EnrollmentRepositoryPort;
@@ -15,7 +16,8 @@ public class EnrollmentConfig {
     public EnrollmentUseCase enrollmentUseCase(
             EnrollmentRepositoryPort enrollmentRepositoryPort,
             OfferRepositoryPort offerRepositoryPort,
-            UserRepositoryPort userRepository) {
-        return new EnrollmentApplicationService(enrollmentRepositoryPort, offerRepositoryPort, userRepository);
+            UserRepositoryPort userRepository,
+            InvoiceRepositoryPort invoiceRepositoryPort) {
+        return new EnrollmentApplicationService(enrollmentRepositoryPort, offerRepositoryPort, userRepository, invoiceRepositoryPort);
     }
 }

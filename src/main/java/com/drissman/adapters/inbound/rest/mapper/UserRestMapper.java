@@ -16,6 +16,7 @@ public class UserRestMapper {
         return UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .role(user.getRole() != null ? user.getRole().name() : null)

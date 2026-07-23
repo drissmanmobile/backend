@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -17,7 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table("invoices")
-public class InvoiceEntity {
+public class InvoiceEntity implements Persistable<UUID> {
 
     @Id
     private UUID id;
@@ -49,4 +51,13 @@ public class InvoiceEntity {
 
     @Column("paid_at")
     private LocalDateTime paidAt;
+
+    @Transient
+    @Builder.Default
+    private boolean isNewEntity = true;
+
+    @Override
+    public boolean isNew() {
+        return isNewEntity || id == null;
+    }
 }

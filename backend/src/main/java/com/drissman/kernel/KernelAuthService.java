@@ -74,7 +74,7 @@ public class KernelAuthService {
      * Stratégie login-first : tente le login kernel avec le mot de passe dérivé ;
      * si le compte n'existe pas encore, le crée (sign-up) puis stocke le token.
      */
-    Mono<Void> syncUser(User user) {
+    public Mono<Void> syncUser(User user) {
         String kernelPassword = derivedPassword(user.getId());
         return kernelLogin(user.getEmail(), kernelPassword)
                 .onErrorResume(e -> {
@@ -121,9 +121,8 @@ public class KernelAuthService {
             tokenStore.put(user.getId(), accessToken, ttl);
         } else if ("EMAIL_VERIFICATION_REQUIRED".equals(response.getData().path("status").asText(""))) {
             // Compte-miroir créé mais en attente de vérification email côté kernel.
-            // Le token sera obtenu au prochain login une fois l'email vérifié
-            // (ou la vérification désactivée pour notre ClientApplication).
             log.info("Compte-miroir kernel créé pour {} — en attente de vérification email", user.getEmail());
+            return Mono.error(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "EMAIL_VERIFICATION_REQUIRED"));
         } else {
             log.warn("Pas d'accessToken kernel pour {} (nextStep={}, status={})",
                     user.getEmail(),

@@ -23,6 +23,8 @@ public class UserEntity {
 
     private String email;
 
+    private String username;
+
     private String password;
 
     @Column("first_name")

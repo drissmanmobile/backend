@@ -6,6 +6,7 @@ import com.drissman.ports.outbound.MonitorRepositoryPort;
 import com.drissman.ports.outbound.OfferRepositoryPort;
 import com.drissman.ports.outbound.TrainingPeriodRepositoryPort;
 import com.drissman.ports.outbound.SessionRepositoryPort;
+import com.drissman.service.FirebaseNotificationService;
 import com.drissman.service.SessionApplicationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,13 +20,15 @@ public class SessionConfig {
             EnrollmentRepositoryPort enrollmentRepositoryPort,
             MonitorRepositoryPort monitorRepositoryPort,
             OfferRepositoryPort offerRepositoryPort,
-            TrainingPeriodRepositoryPort trainingPeriodRepository) {
+            TrainingPeriodRepositoryPort trainingPeriodRepository,
+            FirebaseNotificationService notificationService) {
         return new SessionApplicationService(
                 sessionRepositoryPort,
                 enrollmentRepositoryPort,
                 monitorRepositoryPort,
                 offerRepositoryPort,
-                trainingPeriodRepository
+                trainingPeriodRepository,
+                notificationService
         );
     }
 }

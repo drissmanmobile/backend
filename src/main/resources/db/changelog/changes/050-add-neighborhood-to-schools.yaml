@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 050-add-neighborhood-to-schools
       author: antigravity
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: schools
+                columnName: neighborhood
       changes:
         - addColumn:
             tableName: schools

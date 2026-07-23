@@ -35,8 +35,25 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public Mono<User> findFirstByUsernameIgnoreCase(String username) {
+        return springDataUserRepository.findFirstByUsernameIgnoreCase(username)
+                .map(UserPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public Mono<User> findFirstByEmailIgnoreCaseOrUsernameIgnoreCase(String identifier) {
+        return springDataUserRepository.findFirstByEmailIgnoreCaseOrUsernameIgnoreCase(identifier)
+                .map(UserPersistenceMapper::toDomain);
+    }
+
+    @Override
     public Mono<Boolean> existsByEmail(String email) {
         return springDataUserRepository.existsByEmail(email);
+    }
+
+    @Override
+    public Mono<Boolean> existsByUsername(String username) {
+        return springDataUserRepository.existsByUsername(username);
     }
 
     @Override

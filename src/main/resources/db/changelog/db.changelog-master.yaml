@@ -103,3 +103,14 @@ databaseChangeLog:
       file: db/changelog/changes/048-create-vehicles-table.yaml
   - include:
       file: db/changelog/changes/049-add-vehicle-id-to-sessions.yaml
+  - include:
+      file: db/changelog/changes/051-create-notifications-table.yaml
+  - include:
+      file: db/changelog/changes/052-add-username-to-users.yaml
+  - include:
+      file: db/changelog/changes/053-update-school-coordinates.yaml
+  - include:
+      file: db/changelog/changes/054-create-session-locations-table.yaml
+
+
+

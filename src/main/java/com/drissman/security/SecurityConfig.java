@@ -73,6 +73,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/registrations/me").hasRole("VISITOR")
                         .pathMatchers("/api/admin/registrations/**").hasRole("SCHOOL_ADMIN")
                         .pathMatchers("/api/enrollments/**").hasAnyRole("VISITOR", "STUDENT", "SCHOOL_ADMIN")
+                        .pathMatchers("/api/payments/**").authenticated()
                         .anyExchange().authenticated())
                 .build();
     }

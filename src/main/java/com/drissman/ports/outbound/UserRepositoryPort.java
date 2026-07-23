@@ -9,7 +9,10 @@ public interface UserRepositoryPort {
     Mono<User> findById(UUID id);
     Mono<User> findByEmail(String email);
     Mono<User> findFirstByEmailIgnoreCase(String email);
+    Mono<User> findFirstByUsernameIgnoreCase(String username);
+    Mono<User> findFirstByEmailIgnoreCaseOrUsernameIgnoreCase(String identifier);
     Mono<Boolean> existsByEmail(String email);
+    Mono<Boolean> existsByUsername(String username);
     Mono<User> save(User user);
     Mono<Void> deleteById(UUID id);
 }

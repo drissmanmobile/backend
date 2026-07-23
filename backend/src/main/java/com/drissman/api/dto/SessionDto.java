@@ -18,7 +18,7 @@ import java.util.UUID;
 public class SessionDto {
     private UUID id;
     private List<UUID> offerIds;
-    private UUID monitorId;
+    private List<UUID> monitorIds;
     private UUID moduleId;
     private UUID lessonId;
     private LocalDate date;

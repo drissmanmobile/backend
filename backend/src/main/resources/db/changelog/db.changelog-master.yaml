@@ -95,3 +95,14 @@ databaseChangeLog:
       file: db/changelog/changes/045-monitor-license-nullable.yaml
   - include:
       file: db/changelog/changes/046-offer-monitors-and-session-offers.yaml
+  - include:
+      file: db/changelog/changes/047-session-monitors.yaml
+  - include:
+      file: db/changelog/changes/048-fix-uuid-defaults.yaml
+  - include:
+      file: db/changelog/changes/049-notifications.yaml
+  - include:
+      file: db/changelog/changes/050-create-documents.yaml
+  - include:
+      file: db/changelog/changes/051-create-chat-messages.yaml
+

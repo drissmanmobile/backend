@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 042-add-school-id-to-documents
       author: antigravity
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: documents
+                columnName: school_id
       changes:
         - addColumn:
             tableName: documents

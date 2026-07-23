@@ -1,8 +1,10 @@
 package com.drissman.service;
 
 import com.drissman.domain.model.Enrollment;
+import com.drissman.domain.model.Invoice;
 import com.drissman.domain.model.Offer;
 import com.drissman.domain.model.User;
+import com.drissman.ports.outbound.InvoiceRepositoryPort;
 import com.drissman.ports.outbound.UserRepositoryPort;
 import com.drissman.ports.inbound.EnrollmentUseCase;
 import com.drissman.ports.outbound.EnrollmentRepositoryPort;
@@ -23,6 +25,7 @@ public class EnrollmentApplicationService implements EnrollmentUseCase {
     private final EnrollmentRepositoryPort enrollmentRepositoryPort;
     private final OfferRepositoryPort offerRepositoryPort;
     private final UserRepositoryPort userRepository;
+    private final InvoiceRepositoryPort invoiceRepositoryPort;
 
     @Override
     public Mono<Enrollment> createEnrollment(UUID userId, UUID offerId) {
@@ -40,13 +43,14 @@ public class EnrollmentApplicationService implements EnrollmentUseCase {
                     return enrollmentRepositoryPort.findByUserIdAndOfferId(userId, offerId)
                             .filter(existing -> existing.getStatus() == Enrollment.EnrollmentStatus.PENDING
                                     || existing.getStatus() == Enrollment.EnrollmentStatus.ACTIVE)
-                            .hasElement()
-                            .flatMap(exists -> {
-                                if (exists) {
-                                    return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
-                                            "Vous etes deja inscrit a cette offre"));
+                            .flatMap(existing -> {
+                                if (existing.getStatus() == Enrollment.EnrollmentStatus.PENDING) {
+                                    return Mono.just(existing);
                                 }
-
+                                return Mono.<Enrollment>error(new ResponseStatusException(HttpStatus.CONFLICT,
+                                        "Vous etes deja inscrit a cette offre"));
+                            })
+                            .switchIfEmpty(Mono.defer(() -> {
                                 Mono<User> normalizedUserMono;
                                 if (user.getRole() == User.Role.VISITOR || user.getSchoolId() == null) {
                                     user.setRole(User.Role.STUDENT);
@@ -63,15 +67,28 @@ public class EnrollmentApplicationService implements EnrollmentUseCase {
                                             .offerId(offer.getId())
                                             .trainingPeriodId(null)
                                             .enrolledAt(LocalDateTime.now())
-                                            .status(Enrollment.EnrollmentStatus.ACTIVE)
+                                            .status(Enrollment.EnrollmentStatus.PENDING)
                                             .hoursPurchased(offer.getHours() != null ? offer.getHours() : 0)
                                             .hoursConsumed(0)
                                             .createdAt(LocalDateTime.now())
                                             .build();
 
-                                    return enrollmentRepositoryPort.save(enrollment);
+                                    return enrollmentRepositoryPort.save(enrollment)
+                                            .flatMap(savedEnrollment -> {
+                                                Invoice invoice = Invoice.builder()
+                                                        .enrollmentId(savedEnrollment.getId())
+                                                        .userId(savedUser.getId())
+                                                        .schoolId(offer.getSchoolId())
+                                                        .amount(offer.getPrice() != null ? offer.getPrice() : 0)
+                                                        .status(Invoice.InvoiceStatus.PENDING)
+                                                        .paymentMethod(Invoice.PaymentMethod.CASH)
+                                                        .paymentReference("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                                                        .createdAt(LocalDateTime.now())
+                                                        .build();
+                                                return invoiceRepositoryPort.save(invoice).thenReturn(savedEnrollment);
+                                            });
                                 });
-                            });
+                            }));
                 });
     }
 

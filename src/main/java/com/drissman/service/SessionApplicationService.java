@@ -11,6 +11,7 @@ import com.drissman.ports.outbound.MonitorRepositoryPort;
 import com.drissman.ports.outbound.OfferRepositoryPort;
 import com.drissman.ports.outbound.SessionRepositoryPort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
+@Slf4j
 @RequiredArgsConstructor
 public class SessionApplicationService implements SessionUseCase {
 
@@ -27,6 +29,7 @@ public class SessionApplicationService implements SessionUseCase {
     private final MonitorRepositoryPort monitorRepositoryPort;
     private final OfferRepositoryPort offerRepositoryPort;
     private final TrainingPeriodRepositoryPort trainingPeriodRepository;
+    private final FirebaseNotificationService notificationService;
 
     @Override
     public Mono<Session> scheduleSession(UUID schoolId, UUID enrollmentId, UUID offerId, UUID monitorId, UUID vehicleId, UUID moduleId, UUID lessonId, LocalDate date, LocalTime startTime, LocalTime endTime, String meetingPoint) {
@@ -133,10 +136,17 @@ public class SessionApplicationService implements SessionUseCase {
     public Flux<Enrollment> getStudentsForMonitor(UUID userId) {
         return monitorRepositoryPort.findByUserId(userId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Profil moniteur introuvable")))
-                .flatMapMany(monitor -> sessionRepositoryPort.findByMonitorId(monitor.getId())
-                        .map(Session::getEnrollmentId)
-                        .distinct()
-                        .flatMap(enrollmentRepositoryPort::findById));
+                .flatMapMany(monitor -> {
+                    Flux<Enrollment> sessionEnrollments = sessionRepositoryPort.findByMonitorId(monitor.getId())
+                            .map(Session::getEnrollmentId)
+                            .distinct()
+                            .flatMap(enrollmentRepositoryPort::findById);
+
+                    Flux<Enrollment> schoolEnrollments = enrollmentRepositoryPort.findBySchoolId(monitor.getSchoolId());
+
+                    return Flux.concat(sessionEnrollments, schoolEnrollments)
+                            .distinct(Enrollment::getId);
+                });
     }
 
     @Override
@@ -183,7 +193,45 @@ public class SessionApplicationService implements SessionUseCase {
             return Mono.error(new RuntimeException("Pas assez d'heures restantes sur l'inscription"));
         }
 
-        return sessionRepositoryPort.save(session);
+        return sessionRepositoryPort.save(session)
+                .flatMap(savedSession -> sendSessionNotifications(savedSession, enrollment).thenReturn(savedSession));
+    }
+
+    private Mono<Void> sendSessionNotifications(Session session, Enrollment enrollment) {
+        if (notificationService == null) {
+            return Mono.empty();
+        }
+        String timeStr = session.getStartTime() + " - " + session.getEndTime();
+        String dateStr = session.getDate().toString();
+        String locationStr = session.getMeetingPoint() != null ? " Lieu : " + session.getMeetingPoint() : "";
+
+        // 1. Notify Student
+        Mono<Void> notifyStudent = Mono.empty();
+        if (enrollment.getUserId() != null) {
+            String studentTitle = "🚗 Nouvelle séance de conduite programmée";
+            String studentBody = "Vous êtes programmé pour une séance le " + dateStr + " de " + timeStr + "." + locationStr;
+            notifyStudent = notificationService.sendNotificationToUser(enrollment.getUserId(), studentTitle, studentBody);
+        }
+
+        // 2. Notify Monitor (if assigned)
+        Mono<Void> notifyMonitor = Mono.empty();
+        if (session.getMonitorId() != null) {
+            notifyMonitor = monitorRepositoryPort.findById(session.getMonitorId())
+                    .flatMap(monitor -> {
+                        if (monitor.getUserId() != null) {
+                            String monitorTitle = "📅 Nouvelle séance attribuée";
+                            String monitorBody = "Une séance de conduite vous a été attribuée le " + dateStr + " de " + timeStr + "." + locationStr;
+                            return notificationService.sendNotificationToUser(monitor.getUserId(), monitorTitle, monitorBody);
+                        }
+                        return Mono.empty();
+                    });
+        }
+
+        return Mono.when(notifyStudent, notifyMonitor)
+                .onErrorResume(e -> {
+                    log.warn("Erreur lors de l'envoi des notifications de séance : {}", e.getMessage());
+                    return Mono.empty();
+                });
     }
 
     private boolean isDateInPeriod(TrainingPeriod period, LocalDate date) {

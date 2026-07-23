@@ -65,15 +65,21 @@ public class PaymentService {
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "Cette inscription ne vous appartient pas")))
                 .flatMap(enrollment -> invoiceRepository.findByEnrollmentId(enrollment.getId())
-                        .filter(inv -> inv.getStatus() == Invoice.InvoiceStatus.PENDING
-                                || inv.getStatus() == Invoice.InvoiceStatus.PAID)
-                        .hasElements()
-                        .flatMap(exists -> {
-                            if (exists) {
+                        .collectList()
+                        .flatMap(invoices -> {
+                            boolean alreadyPaid = invoices.stream().anyMatch(inv -> inv.getStatus() == Invoice.InvoiceStatus.PAID);
+                            if (alreadyPaid) {
                                 return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
-                                        "Un paiement est déjà en cours ou effectué pour cette inscription"));
+                                        "Un paiement a déjà été effectué pour cette inscription"));
                             }
-                            return createInvoice(enrollment, method, request.getPhone());
+                            // Marquer les factures PENDING précédentes en FAILED pour permettre une nouvelle tentative
+                            return Flux.fromIterable(invoices)
+                                    .filter(inv -> inv.getStatus() == Invoice.InvoiceStatus.PENDING)
+                                    .flatMap(inv -> {
+                                        inv.setStatus(Invoice.InvoiceStatus.FAILED);
+                                        return invoiceRepository.save(inv);
+                                    })
+                                    .then(createInvoice(enrollment, method, request.getPhone()));
                         }))
                 .map(this::toDto);
     }

@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 049-add-vehicle-id-to-sessions
       author: antigravity
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sessions
+                columnName: vehicle_id
       changes:
         - addColumn:
             tableName: sessions

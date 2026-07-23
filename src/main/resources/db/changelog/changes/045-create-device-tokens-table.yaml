@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 045-create-device-tokens-table
       author: antigravity
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: device_tokens
       changes:
         - createTable:
             tableName: device_tokens

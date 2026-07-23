@@ -77,8 +77,12 @@ public class AuthService {
 
                                     return schoolRepository.save(school)
                                             .flatMap(savedSchool -> {
+                                                String defaultUsername = request.getUsername() != null && !request.getUsername().isBlank()
+                                                        ? request.getUsername().trim()
+                                                        : request.getEmail().split("@")[0];
                                                 User user = User.builder()
                                                         .email(request.getEmail())
+                                                        .username(defaultUsername)
                                                         .password(passwordEncoder.encode(request.getPassword()))
                                                         .firstName(request.getFirstName())
                                                         .lastName(request.getLastName())
@@ -99,8 +103,12 @@ public class AuthService {
                                             .map(this::createAuthResponse);
                                 } else {
                                     // VISITOR/CANDIDAT/MONITOR: simple user creation without school
+                                    String defaultUsername = request.getUsername() != null && !request.getUsername().isBlank()
+                                            ? request.getUsername().trim()
+                                            : request.getEmail().split("@")[0];
                                     User user = User.builder()
                                             .email(request.getEmail())
+                                            .username(defaultUsername)
                                             .password(passwordEncoder.encode(request.getPassword()))
                                             .firstName(request.getFirstName())
                                             .lastName(request.getLastName())
@@ -125,17 +133,17 @@ public class AuthService {
 
     public Mono<AuthResponse> upgradeVisitorRole(java.util.UUID userId, UpgradeVisitorRoleRequest request) {
         return userRepository.findById(userId)
-                .switchIfEmpty(Mono.error(new RuntimeException("Utilisateur non trouvÃ©")))
+                .switchIfEmpty(Mono.error(new RuntimeException("Utilisateur non trouvé")))
                 .flatMap(user -> {
                     if (user.getRole() != User.Role.VISITOR) {
-                        return Mono.error(new RuntimeException("Seul un compte visiteur peut changer de rÃ´le"));
+                        return Mono.error(new RuntimeException("Seul un compte visiteur peut changer de rôle"));
                     }
 
                     User.Role targetRole;
                     try {
                         targetRole = User.Role.valueOf(request.getTargetRole().toUpperCase());
                     } catch (IllegalArgumentException | NullPointerException e) {
-                        return Mono.error(new RuntimeException("RÃ´le cible invalide"));
+                        return Mono.error(new RuntimeException("Rôle cible invalide"));
                     }
 
                     if (targetRole != User.Role.STUDENT && targetRole != User.Role.SCHOOL_ADMIN) {
@@ -151,7 +159,7 @@ public class AuthService {
                     School school = School.builder()
                             .name(request.getSchoolName() != null && !request.getSchoolName().isBlank()
                                     ? request.getSchoolName()
-                                    : "Ma Nouvelle Auto-Ã‰cole")
+                                    : "Ma Nouvelle Auto-École")
                             .address("Adresse à compléter")
                             .city("Yaoundé")
                             .isActive(true)
@@ -168,32 +176,50 @@ public class AuthService {
     }
 
     public Mono<AuthResponse> login(LoginRequest request) {
-        String normalizedEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        String identifier = request.getIdentifier();
         String rawPassword = request.getPassword() != null ? request.getPassword() : "";
 
-        return webClientBuilder.build()
-                .post()
-                .uri("https://kernel-core.yowyob.com/api/auth/login")
-                .header("X-Client-Id", "drissman")
-                .header("X-Api-Key", "1V0ET97W4T2-6ZYnarvtQt4ffg5YUcte0JDwyY5udYzuhKD8")
-                .header("X-Tenant-Id", "drissman")
-                .bodyValue(new KernelLoginRequest(normalizedEmail, rawPassword))
-                .retrieve()
-                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                        response -> response.bodyToMono(String.class).flatMap(errorBody -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, formatKernelError(errorBody)))))
-                .bodyToMono(String.class)
-                .then(userRepository.findFirstByEmailIgnoreCase(normalizedEmail))
+        return userRepository.findFirstByEmailIgnoreCaseOrUsernameIgnoreCase(identifier)
+                .flatMap(user -> webClientBuilder.build()
+                        .post()
+                        .uri("https://kernel-core.yowyob.com/api/auth/login")
+                        .header("X-Client-Id", "drissman")
+                        .header("X-Api-Key", "1V0ET97W4T2-6ZYnarvtQt4ffg5YUcte0JDwyY5udYzuhKD8")
+                        .header("X-Tenant-Id", "drissman")
+                        .bodyValue(new KernelLoginRequest(user.getEmail(), rawPassword))
+                        .retrieve()
+                        .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                response -> response.bodyToMono(String.class).flatMap(errorBody -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, formatKernelError(errorBody)))))
+                        .bodyToMono(String.class)
+                        .thenReturn(user)
+                )
                 .switchIfEmpty(Mono.defer(() -> {
-                    // Auto-creation locale si l'utilisateur Kernel Core se connecte pour la première fois
-                    User newUser = User.builder()
-                            .email(normalizedEmail)
-                            .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
-                            .firstName("Utilisateur")
-                            .lastName("")
-                            .role(User.Role.VISITOR)
-                            .isVerified(true)
-                            .build();
-                    return userRepository.save(newUser);
+                    String normalizedEmail = identifier.toLowerCase();
+                    return webClientBuilder.build()
+                            .post()
+                            .uri("https://kernel-core.yowyob.com/api/auth/login")
+                            .header("X-Client-Id", "drissman")
+                            .header("X-Api-Key", "1V0ET97W4T2-6ZYnarvtQt4ffg5YUcte0JDwyY5udYzuhKD8")
+                            .header("X-Tenant-Id", "drissman")
+                            .bodyValue(new KernelLoginRequest(normalizedEmail, rawPassword))
+                            .retrieve()
+                            .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                    response -> response.bodyToMono(String.class).flatMap(errorBody -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, formatKernelError(errorBody)))))
+                            .bodyToMono(String.class)
+                            .then(userRepository.findFirstByEmailIgnoreCase(normalizedEmail))
+                            .switchIfEmpty(Mono.defer(() -> {
+                                String defaultUsername = normalizedEmail.contains("@") ? normalizedEmail.split("@")[0] : normalizedEmail;
+                                User newUser = User.builder()
+                                        .email(normalizedEmail)
+                                        .username(defaultUsername)
+                                        .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
+                                        .firstName("Utilisateur")
+                                        .lastName("")
+                                        .role(User.Role.VISITOR)
+                                        .isVerified(true)
+                                        .build();
+                                return userRepository.save(newUser);
+                            }));
                 }))
                 .map(this::createAuthResponse);
     }
@@ -220,6 +246,7 @@ public class AuthService {
                             .switchIfEmpty(Mono.defer(() -> {
                                 User newUser = User.builder()
                                         .email(email)
+                                        .username(email.split("@")[0])
                                         .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
                                         .firstName(tokenInfo.getGivenName() != null ? tokenInfo.getGivenName() : (tokenInfo.getName() != null ? tokenInfo.getName() : "Utilisateur"))
                                         .lastName(tokenInfo.getFamilyName() != null ? tokenInfo.getFamilyName() : "")
@@ -244,6 +271,7 @@ public class AuthService {
                 .user(AuthResponse.UserDto.builder()
                         .id(user.getId())
                         .email(user.getEmail())
+                        .username(user.getUsername())
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
                         .role(user.getRole().name())

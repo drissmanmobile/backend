@@ -1,5 +1,6 @@
 package com.drissman.adapters.outbound.persistence;
 
+import com.drissman.adapters.outbound.persistence.entity.InvoiceEntity;
 import com.drissman.adapters.outbound.persistence.mapper.InvoicePersistenceMapper;
 import com.drissman.adapters.outbound.persistence.repository.SpringDataInvoiceRepository;
 import com.drissman.domain.model.Invoice;
@@ -43,7 +44,19 @@ public class InvoicePersistenceAdapter implements InvoiceRepositoryPort {
 
     @Override
     public Mono<Invoice> save(Invoice invoice) {
-        return repository.save(InvoicePersistenceMapper.toEntity(invoice))
+        if (invoice.getId() == null) {
+            InvoiceEntity entity = InvoicePersistenceMapper.toEntity(invoice);
+            entity.setNewEntity(true);
+            return repository.save(entity)
+                    .map(InvoicePersistenceMapper::toDomain);
+        }
+
+        return repository.existsById(invoice.getId())
+                .flatMap(exists -> {
+                    InvoiceEntity entity = InvoicePersistenceMapper.toEntity(invoice);
+                    entity.setNewEntity(!exists);
+                    return repository.save(entity);
+                })
                 .map(InvoicePersistenceMapper::toDomain);
     }
 
