@@ -8,10 +8,18 @@ services:
     envVars:
       - key: PORT
         value: 8080
-      - key: SPRING_DATASOURCE_URL
+      - key: DB_HOST
         fromDatabase:
           name: drissman-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: drissman-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: drissman-db
+          property: database
       - key: DB_USERNAME
         fromDatabase:
           name: drissman-db
