@@ -27,44 +27,12 @@ public class LiquibaseConfig {
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(driverClassName);
-        
-        String cleanUrl = url;
-        String cleanUsername = username;
-        String cleanPassword = password;
-        
-        if (cleanUrl != null && (cleanUrl.contains("@") || cleanUrl.startsWith("postgres://") || cleanUrl.startsWith("postgresql://"))) {
-            try {
-                String uriString = cleanUrl.replace("jdbc:", "");
-                if (uriString.startsWith("postgres://")) {
-                    uriString = uriString.replace("postgres://", "postgresql://");
-                }
-                java.net.URI uri = new java.net.URI(uriString);
-                String host = uri.getHost();
-                int port = uri.getPort() > 0 ? uri.getPort() : 5432;
-                String path = uri.getPath();
-                cleanUrl = "jdbc:postgresql://" + host + ":" + port + (path != null && !path.isEmpty() ? path : "/drissman");
-                
-                if (uri.getUserInfo() != null) {
-                    String[] userParts = uri.getUserInfo().split(":");
-                    if (userParts.length > 0 && userParts[0] != null && !userParts[0].isEmpty()) {
-                        cleanUsername = userParts[0];
-                    }
-                    if (userParts.length > 1 && userParts[1] != null && !userParts[1].isEmpty()) {
-                        cleanPassword = userParts[1];
-                    }
-                }
-            } catch (Exception e) {
-                if (!cleanUrl.startsWith("jdbc:")) {
-                    cleanUrl = "jdbc:" + cleanUrl;
-                }
-            }
-        } else if (cleanUrl != null && !cleanUrl.startsWith("jdbc:")) {
-            cleanUrl = "jdbc:" + cleanUrl;
-        }
-        
-        dataSource.setUrl(cleanUrl);
-        dataSource.setUsername(cleanUsername);
-        dataSource.setPassword(cleanPassword);
+
+        String[] parsed = parseDatabaseUrl(url, username, password);
+        dataSource.setUrl(parsed[0]);
+        dataSource.setUsername(parsed[1]);
+        dataSource.setPassword(parsed[2]);
+
         return dataSource;
     }
 
@@ -74,5 +42,68 @@ public class LiquibaseConfig {
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.yaml");
         return liquibase;
+    }
+
+    private static String[] parseDatabaseUrl(String rawUrl, String defaultUser, String defaultPass) {
+        if (rawUrl == null || rawUrl.trim().isEmpty()) {
+            return new String[] { "jdbc:postgresql://127.0.0.1:5433/drissman", defaultUser, defaultPass };
+        }
+
+        String work = rawUrl.trim();
+        if (work.startsWith("jdbc:")) {
+            work = work.substring(5);
+        }
+        if (work.startsWith("postgresql://")) {
+            work = work.substring(13);
+        } else if (work.startsWith("postgres://")) {
+            work = work.substring(11);
+        }
+
+        String user = defaultUser;
+        String pass = defaultPass;
+
+        if (work.contains("@")) {
+            int atIndex = work.lastIndexOf("@");
+            String userPassPart = work.substring(0, atIndex);
+            work = work.substring(atIndex + 1);
+
+            if (userPassPart.contains(":")) {
+                int colonIndex = userPassPart.indexOf(":");
+                user = userPassPart.substring(0, colonIndex);
+                pass = userPassPart.substring(colonIndex + 1);
+            } else {
+                user = userPassPart;
+            }
+        }
+
+        String hostPortDb = work;
+        String host = "127.0.0.1";
+        String port = "5432";
+        String db = "drissman";
+
+        if (hostPortDb.contains("/")) {
+            int slashIndex = hostPortDb.indexOf("/");
+            String hostPortPart = hostPortDb.substring(0, slashIndex);
+            String dbPart = hostPortDb.substring(slashIndex + 1);
+
+            if (dbPart.contains("?")) {
+                dbPart = dbPart.substring(0, dbPart.indexOf("?"));
+            }
+            if (!dbPart.trim().isEmpty()) {
+                db = dbPart;
+            }
+            hostPortDb = hostPortPart;
+        }
+
+        if (hostPortDb.contains(":")) {
+            int colonIndex = hostPortDb.indexOf(":");
+            host = hostPortDb.substring(0, colonIndex);
+            port = hostPortDb.substring(colonIndex + 1);
+        } else if (!hostPortDb.trim().isEmpty()) {
+            host = hostPortDb;
+        }
+
+        String cleanJdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + db;
+        return new String[] { cleanJdbcUrl, user, pass };
     }
 }
