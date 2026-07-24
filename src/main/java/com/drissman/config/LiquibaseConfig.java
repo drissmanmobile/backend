@@ -27,7 +27,13 @@ public class LiquibaseConfig {
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(driverClassName);
-        dataSource.setUrl(url);
+        
+        String jdbcUrl = url;
+        if (jdbcUrl != null && !jdbcUrl.startsWith("jdbc:")) {
+            jdbcUrl = "jdbc:" + jdbcUrl;
+        }
+        
+        dataSource.setUrl(jdbcUrl);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
         return dataSource;
