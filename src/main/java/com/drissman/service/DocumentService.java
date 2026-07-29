@@ -28,6 +28,7 @@ public class DocumentService {
         String cat = category != null && !category.isEmpty() ? category : "Général";
 
         Document doc = Document.builder()
+                .id(UUID.randomUUID())
                 .schoolId(schoolId)
                 .uploaderId(uploaderId)
                 .enrollmentId(enrollmentId)

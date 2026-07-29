@@ -158,6 +158,10 @@ public class SchoolService {
                                                 school.setEmail(request.getEmail());
                                         if (request.getWebsite() != null)
                                                 school.setWebsite(request.getWebsite());
+                                        if (request.getLatitude() != null)
+                                                school.setLatitude(request.getLatitude());
+                                        if (request.getLongitude() != null)
+                                                school.setLongitude(request.getLongitude());
                                         return schoolRepository.save(school);
                                 })
                                 .flatMap(savedSchool -> savedSchool != null ? findById(savedSchool.getId())

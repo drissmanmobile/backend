@@ -5,6 +5,7 @@ import com.drissman.domain.repository.UserRepository;
 import com.drissman.service.DocumentService;
 import com.drissman.service.ImageStorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
@@ -35,22 +37,57 @@ public class DocumentController {
             org.springframework.web.server.ServerWebExchange exchange) {
 
         if (principal == null) {
+            log.error("[DocumentUpload] Failed: Principal is null");
             return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         }
-        UUID uploaderId = UUID.fromString(principal.getName());
+        UUID uploaderId;
+        try {
+            uploaderId = UUID.fromString(principal.getName());
+        } catch (IllegalArgumentException e) {
+            log.error("[DocumentUpload] Invalid principal UUID: {}", principal.getName());
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid uploader ID format"));
+        }
 
         return userRepository.findById(uploaderId)
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.error("[DocumentUpload] User not found in database for ID: {}", uploaderId);
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                }))
                 .flatMap(user -> {
-                    if (user.getSchoolId() == null) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "No school associated"));
+                    UUID schoolId = user.getSchoolId();
+                    if (schoolId == null) {
+                        log.warn("[DocumentUpload] User {} has no school associated, using fallback or denying", uploaderId);
+                        return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Aucune auto-école associée à cet utilisateur"));
                     }
                     
                     return exchange.getMultipartData().flatMap(multipartData -> {
                         Part part = multipartData.getFirst("file");
-                        if (!(part instanceof FilePart)) {
+                        if (part == null && !multipartData.isEmpty()) {
+                            part = multipartData.values().iterator().next().get(0);
+                        }
+                        if (part == null) {
+                            log.error("[DocumentUpload] Part 'file' missing");
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is missing or invalid"));
                         }
-                        FilePart filePart = (FilePart) part;
+
+                        String originalFilename = "document.pdf";
+                        if (part instanceof FilePart) {
+                            String fn = ((FilePart) part).filename();
+                            if (fn != null && !fn.isBlank()) {
+                                originalFilename = fn;
+                            }
+                        } else {
+                            String cd = part.headers().getFirst(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION);
+                            if (cd != null && cd.contains("filename=")) {
+                                String fn = cd.substring(cd.indexOf("filename=") + 9).replace("\"", "").trim();
+                                if (fn.contains(";")) {
+                                    fn = fn.substring(0, fn.indexOf(";")).trim();
+                                }
+                                if (!fn.isBlank()) {
+                                    originalFilename = fn;
+                                }
+                            }
+                        }
                         
                         Part categoryPart = multipartData.getFirst("category");
                         String category = "Administratif";
@@ -63,36 +100,41 @@ public class DocumentController {
                         if (enrollmentIdPart instanceof FormFieldPart) {
                             String value = ((FormFieldPart) enrollmentIdPart).value();
                             if (value != null && !value.isEmpty()) {
-                                enrollmentId = UUID.fromString(value);
+                                try {
+                                    enrollmentId = UUID.fromString(value);
+                                } catch (Exception ignored) {}
                             }
                         }
                         
                         UUID finalEnrollmentId = enrollmentId;
                         String finalCategory = category;
+                        String finalFilename = originalFilename;
+                        Part finalPart = part;
                         
                         return org.springframework.core.io.buffer.DataBufferUtils
-                                .join(filePart.content())
+                                .join(finalPart.content())
                                 .flatMap(buffer -> {
                                     byte[] bytes = new byte[buffer.readableByteCount()];
                                     buffer.read(bytes);
                                     org.springframework.core.io.buffer.DataBufferUtils.release(buffer);
                                     long sizeBytes = bytes.length;
                                     
-                                    return storageService.saveBytes(bytes, filePart.filename())
+                                    return storageService.saveBytes(bytes, finalFilename)
                                             .flatMap(filename -> {
-                                                String fileUrl = "/api/images/" + filename; // Use image controller to serve the file
+                                                String fileUrl = "/api/images/" + filename;
                                                 return documentService.saveDocument(
                                                         uploaderId, 
-                                                        user.getSchoolId(), 
-                                                        filePart.filename(), 
+                                                        schoolId, 
+                                                        finalFilename, 
                                                         fileUrl, 
-                                                        filePart.headers().getContentType() != null ? filePart.headers().getContentType().toString() : "application/pdf", 
+                                                        finalPart.headers().getContentType() != null ? finalPart.headers().getContentType().toString() : "application/pdf", 
                                                         sizeBytes, 
                                                         finalEnrollmentId, 
                                                         finalCategory
                                                 );
                                             });
-                                });
+                                })
+                                .doOnError(err -> log.error("[DocumentUpload] Error processing file content: {}", err.getMessage(), err));
                     });
                 });
     }

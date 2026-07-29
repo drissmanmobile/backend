@@ -1,9 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id: 011-convert-offer-image-url-to-text
-      author: antigravity
-      changes:
-        - modifyDataType:
-            tableName: offers
-            columnName: image_url
-            newDataType: text

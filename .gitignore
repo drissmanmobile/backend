@@ -1,0 +1,6 @@
+target/
+uploads/
+*.log
+*.class
+.DS_Store
+.idea/
