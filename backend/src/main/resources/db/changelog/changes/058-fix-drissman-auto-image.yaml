@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 058-fix-drissman-auto-image
+      author: drissman
+      validCheckSum: ANY
+      changes:
+        - sql:
+            sql: "UPDATE schools SET image_url = 'c20eec74-4b36-4c50-9cdd-8b22c55d2d3f_avatar.jpg' WHERE name LIKE '%Drissm%' OR name LIKE '%auto%';"
