@@ -1,0 +1,134 @@
+package com.drissman.kernel;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Intégration du Payment Core du kernel (module 12-payment-plan).
+ *
+ * Permet un encaissement RÉEL :
+ *   - Mobile Money via MyCoolPay (MTN / Orange Money au Cameroun),
+ *   - Carte via Stripe.
+ *
+ * Contrat (POST /api/payments/orders) :
+ *   { clientId, serviceCode, idempotencyKey, amount, currency,
+ *     provider: MYCOOLPAY|STRIPE, method: MOBILE_MONEY|CARD,
+ *     payerReference, description, callbackUrl }
+ *   -> { id, status, providerReference, redirectUrl, ... }
+ *
+ * Best-effort : si le kernel est indisponible ou non configuré, l'appelant
+ * retombe sur le flux local (facture PENDING confirmée par l'école).
+ */
+@Service
+@RequiredArgsConstructor
+public class KernelPaymentService {
+
+    private final KernelClient kernelClient;
+
+    @Value("${kernel.client-id:}")
+    private String clientId;
+
+    @Value("${kernel.payment.service-code:PAYMENT}")
+    private String serviceCode;
+
+    @Value("${kernel.payment.currency:XAF}")
+    private String currency;
+
+    /** URL publique que le kernel appellera pour notifier le statut final (webhook). */
+    @Value("${kernel.payment.callback-url:}")
+    private String callbackUrl;
+
+    /** Résultat normalisé d'un ordre de paiement kernel. */
+    public record PaymentOrder(String id, String status, String providerReference, String redirectUrl) {
+        public boolean isEmpty() {
+            return id == null && status == null && providerReference == null;
+        }
+    }
+
+    public boolean isConfigured() {
+        return clientId != null && !clientId.isBlank();
+    }
+
+    /** Ordre Mobile Money (MyCoolPay) : le payeur reçoit une demande de paiement (push USSD). */
+    public Mono<PaymentOrder> createMobileMoneyOrder(long amount, String payerPhone, String description, String idempotencyKey) {
+        return createOrder("MYCOOLPAY", "MOBILE_MONEY", amount, payerPhone, description, idempotencyKey);
+    }
+
+    /** Ordre carte (Stripe) : renvoie une redirectUrl de checkout. */
+    public Mono<PaymentOrder> createCardOrder(long amount, String payerReference, String description, String idempotencyKey) {
+        return createOrder("STRIPE", "CARD", amount, payerReference, description, idempotencyKey);
+    }
+
+    private Mono<PaymentOrder> createOrder(String provider, String method, long amount, String payerReference,
+                                           String description, String idempotencyKey) {
+        Map<String, Object> body = new HashMap<>();
+        // clientId / serviceCode ne sont envoyés que s'ils sont renseignés :
+        // le kernel identifie déjà l'appelant par les en-têtes machine, et un
+        // serviceCode non souscrit fait rejeter l'ordre. Les omettre reproduit
+        // l'appel minimal qui encaisse réellement (cf. KERNEL_PAYMENT_SERVICE_CODE).
+        if (clientId != null && !clientId.isBlank()) body.put("clientId", clientId);
+        if (serviceCode != null && !serviceCode.isBlank()) body.put("serviceCode", serviceCode);
+        body.put("idempotencyKey", idempotencyKey);
+        body.put("amount", amount);
+        body.put("currency", currency);
+        body.put("provider", provider);
+        body.put("method", method);
+        if (payerReference != null && !payerReference.isBlank()) body.put("payerReference", payerReference);
+        if (description != null && !description.isBlank()) body.put("description", description);
+        if (callbackUrl != null && !callbackUrl.isBlank()) body.put("callbackUrl", callbackUrl);
+        return kernelClient.post("/api/payments/orders", body)
+                .map(this::toOrder)
+                // Observabilité KERNEL_MIRROR : distingue un ordre RÉELLEMENT créé
+                // (outcome=OK avec status/providerRef) d'un rejet kernel (outcome=FAIL
+                // avec le CORPS d'erreur — serviceCode non autorisé, marchand MyCoolPay
+                // absent…). Sans ça, l'échec est avalé et le blocage reste invisible.
+                .doOnNext(o -> KernelMirrorLog.ok("payment.order.create", idempotencyKey,
+                        "provider=" + provider + " method=" + method
+                                + " status=" + o.status() + " providerRef=" + o.providerReference()))
+                .doOnError(e -> KernelMirrorLog.fail("payment.order.create", idempotencyKey, e, errorBody(e)));
+    }
+
+    /** Rafraîchit le statut de l'ordre auprès du provider. */
+    public Mono<PaymentOrder> refreshOrder(String orderId) {
+        return kernelClient.post("/api/payments/orders/" + orderId + "/refresh", Map.of())
+                .map(this::toOrder)
+                .doOnNext(o -> KernelMirrorLog.ok("payment.order.refresh", orderId, "status=" + o.status()))
+                .doOnError(e -> KernelMirrorLog.fail("payment.order.refresh", orderId, e, errorBody(e)));
+    }
+
+    /** Corps de la réponse d'erreur kernel (porte la vraie cause), tronqué. */
+    private static String errorBody(Throwable e) {
+        if (e instanceof WebClientResponseException w) {
+            String body = w.getResponseBodyAsString();
+            if (body != null && !body.isBlank()) {
+                return body.length() > 500 ? body.substring(0, 500) : body;
+            }
+        }
+        return "";
+    }
+
+    /** Le PaymentOrderResponse peut être encapsulé dans `data` (ApiResponse) ou à la racine. */
+    private PaymentOrder toOrder(KernelResponse resp) {
+        JsonNode d = resp.getData();
+        if (d == null || d.isMissingNode() || d.isNull()) {
+            return new PaymentOrder(null, null, null, null);
+        }
+        return new PaymentOrder(
+                text(d, "id"),
+                text(d, "status"),
+                text(d, "providerReference"),
+                text(d, "redirectUrl"));
+    }
+
+    private static String text(JsonNode n, String field) {
+        JsonNode v = n.path(field);
+        return v.isMissingNode() || v.isNull() ? null : v.asText(null);
+    }
+}
