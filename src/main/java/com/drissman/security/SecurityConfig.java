@@ -29,7 +29,7 @@ public class SecurityConfig {
 
     /** Origines CORS autorisées, séparées par des virgules (surchargées en prod). */
     @org.springframework.beans.factory.annotation.Value(
-            "${app.cors.allowed-origins:https://drissman0.vercel.app,http://localhost:3000}")
+            "${app.cors.allowed-origins:https://drisman.yowyob.com,http://drisman.yowyob.com,https://drissman0.vercel.app,http://localhost:3000,http://localhost:8080}")
     private String allowedOrigins;
 
     @Bean
