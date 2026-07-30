@@ -4,3 +4,4 @@ uploads/
 *.class
 .DS_Store
 .idea/
+firebase-service-account.json

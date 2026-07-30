@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 057-set-default-school-images
+      author: drissman
+      validCheckSum: ANY
+      changes:
+        - sql:
+            sql: "UPDATE schools SET image_url = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80' WHERE image_url IS NULL OR image_url = '' OR image_url LIKE 'http://localhost%';"

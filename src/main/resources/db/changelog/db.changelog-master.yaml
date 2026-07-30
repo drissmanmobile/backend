@@ -117,4 +117,8 @@ databaseChangeLog:
       file: db/changelog/changes/055-delete-mock-offers-and-demo-data.yaml
   - include:
       file: db/changelog/changes/056-delete-mock-schools.yaml
+  - include:
+      file: db/changelog/changes/057-set-default-school-images.yaml
+  - include:
+      file: db/changelog/changes/058-fix-drissman-auto-image.yaml
 
