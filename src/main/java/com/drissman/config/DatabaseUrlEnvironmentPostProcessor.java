@@ -12,6 +12,9 @@ import java.util.Map;
 /**
  * Automatiquement convertit les URLs de bases de données cloud (Railway, Render, Heroku)
  * aux formats JDBC (jdbc:postgresql://...) et R2DBC (r2dbc:postgresql://...).
+ * 
+ * Gère aussi les URLs Railway natives (postgresql://...) qui arrivent
+ * via les références de variables de service.
  */
 public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
@@ -30,7 +33,7 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             rawUrl = dbUrl.trim();
         }
 
-        if (rawUrl != null && !rawUrl.isEmpty()) {
+        if (rawUrl != null && !rawUrl.isEmpty() && !rawUrl.startsWith("$")) {
             Map<String, Object> map = new HashMap<>();
 
             String jdbcUrl;
@@ -77,3 +80,4 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         }
     }
 }
+
