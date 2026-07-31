@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 061-delete-yowyob-test-schools
+      author: drissman
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: schools
+      changes:
+        - sql:
+            sql: "DO $$ BEGIN UPDATE users SET school_id = NULL WHERE school_id IN (SELECT id FROM schools WHERE name LIKE '%Auto test%' OR name LIKE '%Auto Prod%' OR name LIKE '%Drissman Auto%' OR name LIKE '%Excellence%' OR name LIKE '%Conduite Pro%'); EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM offer_modules WHERE offer_id IN (SELECT id FROM offers WHERE school_id IN (SELECT id FROM schools WHERE name LIKE '%Auto test%' OR name LIKE '%Auto Prod%' OR name LIKE '%Drissman Auto%' OR name LIKE '%Excellence%' OR name LIKE '%Conduite Pro%')); EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM session_offers WHERE offer_id IN (SELECT id FROM offers WHERE school_id IN (SELECT id FROM schools WHERE name LIKE '%Auto test%' OR name LIKE '%Auto Prod%' OR name LIKE '%Drissman Auto%' OR name LIKE '%Excellence%' OR name LIKE '%Conduite Pro%')); EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN UPDATE enrollments SET offer_id = NULL WHERE offer_id IN (SELECT id FROM offers WHERE school_id IN (SELECT id FROM schools WHERE name LIKE '%Auto test%' OR name LIKE '%Auto Prod%' OR name LIKE '%Drissman Auto%' OR name LIKE '%Excellence%' OR name LIKE '%Conduite Pro%')); EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM offers WHERE school_id IN (SELECT id FROM schools WHERE name LIKE '%Auto test%' OR name LIKE '%Auto Prod%' OR name LIKE '%Drissman Auto%' OR name LIKE '%Excellence%' OR name LIKE '%Conduite Pro%'); EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM schools WHERE name LIKE '%Auto test%' OR name LIKE '%Auto Prod%' OR name LIKE '%Drissman Auto%' OR name LIKE '%Excellence%' OR name LIKE '%Conduite Pro%' OR id::text IN ('284dc874-432a-4a88-946a-ed292dbd244f', 'f464ac3d-8b27-4e1c-bf07-422d4c75a1d9', '2582a8e2-f796-4fac-bf36-9899016a6b5e'); EXCEPTION WHEN OTHERS THEN NULL; END $$;"

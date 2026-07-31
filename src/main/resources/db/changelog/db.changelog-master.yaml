@@ -121,6 +121,9 @@ databaseChangeLog:
       file: db/changelog/changes/059-purge-all-demo-schools.yaml
   - include:
       file: db/changelog/changes/060-add-admin-credentials.yaml
+  - include:
+      file: db/changelog/changes/061-delete-yowyob-test-schools.yaml
+
 
 
 
