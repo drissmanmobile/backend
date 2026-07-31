@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 059-purge-all-demo-schools
+      author: drissman
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: schools
+      changes:
+        - sql:
+            sql: "DO $$ BEGIN UPDATE users SET school_id = NULL; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN UPDATE documents SET school_id = NULL; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN UPDATE invoices SET school_id = NULL; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN UPDATE training_periods SET school_id = NULL; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM session_monitors; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM offer_monitors; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM monitors; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM session_offers; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM offer_modules; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN UPDATE enrollments SET offer_id = NULL; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM offers; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM bookings; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM reviews; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM availabilities; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM vehicles; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM session_locations; EXCEPTION WHEN OTHERS THEN NULL; END $$;"
+        - sql:
+            sql: "DO $$ BEGIN DELETE FROM schools; EXCEPTION WHEN OTHERS THEN NULL; END $$;"

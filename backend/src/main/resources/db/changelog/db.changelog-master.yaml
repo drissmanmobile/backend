@@ -117,4 +117,7 @@ databaseChangeLog:
       file: db/changelog/changes/057-set-default-school-images.yaml
   - include:
       file: db/changelog/changes/058-fix-drissman-auto-image.yaml
+  - include:
+      file: db/changelog/changes/059-purge-all-demo-schools.yaml
+
 
