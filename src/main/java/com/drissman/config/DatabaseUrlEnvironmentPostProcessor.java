@@ -11,7 +11,8 @@ import java.util.Map;
 
 /**
  * Automatiquement convertit les URLs de bases de données cloud (Railway, Render, Heroku)
- * aux formats JDBC (jdbc:postgresql://...) et R2DBC (r2dbc:postgresql://...).
+ * aux formats JDBC (jdbc:postgresql://...) et R2DBC (r2dbc:postgresql://...)
+ * en extrayant proprement les identifiants pour éviter l'UnknownHostException.
  */
 public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
@@ -33,47 +34,47 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         if (rawUrl != null && !rawUrl.isEmpty()) {
             Map<String, Object> map = new HashMap<>();
 
-            String jdbcUrl;
-            String r2dbcCleanUrl;
-
-            if (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://")) {
-                jdbcUrl = rawUrl.replaceFirst("^postgres(ql)?://", "jdbc:postgresql://");
-                r2dbcCleanUrl = rawUrl.replaceFirst("^postgres(ql)?://", "r2dbc:postgresql://");
-            } else if (rawUrl.startsWith("jdbc:postgresql://")) {
-                jdbcUrl = rawUrl;
-                r2dbcCleanUrl = rawUrl.replace("jdbc:", "r2dbc:");
-            } else if (rawUrl.startsWith("r2dbc:postgresql://")) {
-                r2dbcCleanUrl = rawUrl;
-                jdbcUrl = rawUrl.replace("r2dbc:", "jdbc:");
-            } else {
-                return;
-            }
-
-            map.put("spring.datasource.url", jdbcUrl);
-            map.put("spring.liquibase.url", jdbcUrl);
-            map.put("spring.r2dbc.url", r2dbcCleanUrl);
-
-            // Extrait l'utilisateur et le mot de passe s'ils sont intégrés dans l'URL
             try {
+                // Nettoie le préfixe de protocole pour analyser l'URI avec java.net.URI
                 String uriString = rawUrl.replaceFirst("^(jdbc:|r2dbc:)", "");
                 if (uriString.startsWith("postgres://")) {
                     uriString = uriString.replaceFirst("^postgres://", "postgresql://");
                 }
+                if (!uriString.startsWith("postgresql://")) {
+                    return;
+                }
+
                 URI uri = URI.create(uriString);
-                String userInfo = uri.getUserInfo();
-                if (userInfo != null && userInfo.contains(":")) {
-                    String[] parts = userInfo.split(":", 2);
-                    map.put("spring.datasource.username", parts[0]);
-                    map.put("spring.datasource.password", parts[1]);
-                    map.put("spring.r2dbc.username", parts[0]);
-                    map.put("spring.r2dbc.password", parts[1]);
-                    map.put("spring.liquibase.user", parts[0]);
-                    map.put("spring.liquibase.password", parts[1]);
+                String host = uri.getHost();
+                int port = uri.getPort() > 0 ? uri.getPort() : 5432;
+                String path = uri.getPath();
+
+                if (host != null && !host.isEmpty()) {
+                    // Les drivers JDBC et R2DBC ne supportent pas 'user:password@' dans le nom d'hôte de l'URL
+                    String jdbcCleanUrl = "jdbc:postgresql://" + host + ":" + port + path;
+                    String r2dbcCleanUrl = "r2dbc:postgresql://" + host + ":" + port + path;
+
+                    map.put("spring.datasource.url", jdbcCleanUrl);
+                    map.put("spring.liquibase.url", jdbcCleanUrl);
+                    map.put("spring.r2dbc.url", r2dbcCleanUrl);
+
+                    String userInfo = uri.getUserInfo();
+                    if (userInfo != null && userInfo.contains(":")) {
+                        String[] parts = userInfo.split(":", 2);
+                        map.put("spring.datasource.username", parts[0]);
+                        map.put("spring.datasource.password", parts[1]);
+                        map.put("spring.r2dbc.username", parts[0]);
+                        map.put("spring.r2dbc.password", parts[1]);
+                        map.put("spring.liquibase.user", parts[0]);
+                        map.put("spring.liquibase.password", parts[1]);
+                    }
                 }
             } catch (Exception ignored) {
             }
 
-            environment.getPropertySources().addFirst(new MapPropertySource("cloudDatabaseUrlProperties", map));
+            if (!map.isEmpty()) {
+                environment.getPropertySources().addFirst(new MapPropertySource("cloudDatabaseUrlProperties", map));
+            }
         }
     }
 }
